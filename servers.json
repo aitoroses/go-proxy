@@ -1,0 +1,15 @@
+{
+  "port": 8081,
+  "servers": [
+    {
+      "mount": "/app",
+      "host": "localhost",
+      "port": 3000
+    },
+    {
+      "mount": "/*",
+      "host": "soa-server",
+      "port": 7003
+    }
+  ]
+}
