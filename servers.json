@@ -2,17 +2,14 @@
   "port": 8080,
   "servers": [
     {
-      "mount": "/app",
       "host": "localhost",
       "port": 3000
     },
     {
-      "mount": "/google",
       "host": "www.google.com",
       "port": 80
     },
     {
-      "mount": "/*",
       "host": "soa-server",
       "port": 7003
     }

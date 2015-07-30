@@ -6,25 +6,6 @@ import (
 	proxy "github.com/aitoroses/go-proxy/proxy"
 )
 
-/*
- 	Configuration must be done in this way.
-	{
-	  "port": 8080,
-	  "servers": [
-	    {
-	      "mount": "/app",
-	      "host": "localhost",
-	      "port": 3000
-	    },
-	    {
-	      "mount": "/*",
-	      "host": "soa-server",
-	      "port": 7003
-	    }
-	  ]
-	}
-*/
-
 func main() {
 
 	// Get the config filename

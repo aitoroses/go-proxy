@@ -23,7 +23,7 @@ func proxyCall(s *Proxy) func(w http.ResponseWriter, r *http.Request) {
 			s := s.svs.Servers[i]
 
 			// URL to which proxy the call
-			url := fmt.Sprintf("http://%s:%d%s", s.Host, s.Port, r.URL.Path)
+			url := fmt.Sprintf("http://%s:%d%s", s.Host, s.Port, r.URL.RequestURI())
 			fmt.Printf("%s %s\n", r.Method, url)
 
 			// Create a Request
