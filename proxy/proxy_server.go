@@ -15,7 +15,7 @@ func proxyCall(domain string) func(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Make an Http call to the proxied route
+		// URL to which proxy the call
 		url := domain + r.URL.Path
 		fmt.Printf("%s %s\n", r.Method, url)
 
@@ -43,13 +43,15 @@ type Proxy struct {
 	svs Servers
 }
 
-func (s *Proxy) getName(i int) string {
+// GetName gives the host:port pair as string
+func (s *Proxy) GetName(i int) string {
 	sv := s.svs.Servers[i]
 	return fmt.Sprintf("%s:%d", sv.Host, sv.Port)
 }
 
-func (s *Proxy) getPath(i int) string {
-	return fmt.Sprintf("http://%s", s.getName(i))
+// GetPath gives the full path to call
+func (s *Proxy) GetPath(i int) string {
+	return fmt.Sprintf("http://%s", s.GetName(i))
 }
 
 // Start the proxy server
@@ -57,18 +59,23 @@ func (s *Proxy) Start() {
 
 	// Create a new RegexpHandler as mux
 	mux := &RegexpHandler{}
+
+	// Iterate over configured servers to setup the middleware
 	for i := 0; i < len(s.svs.Servers); i++ {
 		sv := s.svs.Servers[i]
-		fmt.Printf("Proxy: %s -> %s\n", sv.Mount, s.getPath(i))
-		// Add handler based on a regexp
-		mux.HandleFunc(regexp.MustCompile("^"+sv.Mount), proxyCall(s.getPath(i)))
+
+		// Print information about routes
+		fmt.Printf("Proxy: %s  ->  %s\n", sv.Mount, s.GetPath(i))
+
+		// Add handler based on a regexp with the info extracted from the JSON
+		mux.HandleFunc(regexp.MustCompile("^"+sv.Mount), proxyCall(s.GetPath(i)))
 	}
 
 	// Start listening
 	http.ListenAndServe(":"+strconv.Itoa(s.svs.Port), mux)
 }
 
-// New returns a new ServeMux
+// New returns a new Proxy server instance configured
 func New(svs Servers) *Proxy {
 	return &Proxy{svs}
 }

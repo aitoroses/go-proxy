@@ -1,18 +1,46 @@
 package main
 
 import (
-	"net/http"
+	"flag"
 
-	proxy "github.com/aitoroses/proxy/proxy"
+	proxy "github.com/aitoroses/GrayProxy/proxy"
 )
 
+/*
+ 	Configuration must be done in this way.
+	{
+	  "port": 8080,
+	  "servers": [
+	    {
+	      "mount": "/app",
+	      "host": "localhost",
+	      "port": 3000
+	    },
+	    {
+	      "mount": "/*",
+	      "host": "soa-server",
+	      "port": 7003
+	    }
+	  ]
+	}
+*/
+
 func main() {
-	svs, _ := proxy.Read("servers.json")
+
+	// Get the config filename
+	var filename string
+	flag.StringVar(&filename, "config", "servers.json", "Name of the configuration filename")
+
+	// Parse the flags
+	flag.Parse()
+
+	// Read the configuration file
+	svs, _ := proxy.Read(filename)
+
+	// Create a new server instance
 	server := proxy.New(svs)
 
-	go http.ListenAndServe(":3000", nil)
-	go http.ListenAndServe(":7003", nil)
-
+	// Start the server
 	server.Start()
 
 }
