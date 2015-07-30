@@ -42,5 +42,4 @@ func main() {
 
 	// Start the server
 	server.Start()
-
 }

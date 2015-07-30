@@ -5,37 +5,50 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"regexp"
 	"strconv"
-	"strings"
 )
 
-func proxyCall(domain string, removingPartFromURL string) func(w http.ResponseWriter, r *http.Request) {
+func proxyCall(s *Proxy) func(w http.ResponseWriter, r *http.Request) {
 
 	// Create a HTTP client
 	client := &http.Client{}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// URL to which proxy the call
-		url := domain + strings.Replace(r.URL.Path, removingPartFromURL, "", 1)
-		fmt.Printf("%s %s\n", r.Method, url)
 
-		// Create a Request
-		req, err := http.NewRequest(r.Method, url, nil)
-		if err != nil {
-			io.WriteString(w, "Error creating the request to "+url)
+		var resp *http.Response
+
+		// Iterate through servers
+		for i := 0; i < len(s.svs.Servers); i++ {
+
+			s := s.svs.Servers[i]
+
+			// URL to which proxy the call
+			url := fmt.Sprintf("http://%s:%d%s", s.Host, s.Port, r.URL.Path)
+			fmt.Printf("%s %s\n", r.Method, url)
+
+			// Create a Request
+			req, err := http.NewRequest(r.Method, url, nil)
+			if err != nil {
+				io.WriteString(w, "Error creating the request to "+url)
+			}
+
+			// Make http call to proxy
+			// If the call succeeds break the loop
+			resp, err = client.Do(req)
+			if err == nil && (resp.StatusCode < 400) {
+				// Call has success
+				break
+			}
 		}
 
-		// Make http call to proxy
-		resp, err := client.Do(req)
-		if err != nil {
-			panic(err)
+		// Write the response extracting the info from the proxied call
+		if resp != nil {
+			body, _ := ioutil.ReadAll(resp.Body)
+			w.Header().Set("X-Proxy", "go-proxy")
+			io.WriteString(w, string(body))
+		} else {
+			io.WriteString(w, "Not found.")
 		}
-
-		// Write the response
-		body, err := ioutil.ReadAll(resp.Body)
-		w.Header().Set("X-Proxy", "go-proxy")
-		io.WriteString(w, string(body))
 	}
 }
 
@@ -59,18 +72,10 @@ func (s *Proxy) GetPath(i int) string {
 func (s *Proxy) Start() {
 
 	// Create a new RegexpHandler as mux
-	mux := &RegexpHandler{}
+	mux := http.NewServeMux()
 
-	// Iterate over configured servers to setup the middleware
-	for i := 0; i < len(s.svs.Servers); i++ {
-		sv := s.svs.Servers[i]
-
-		// Print information about routes
-		fmt.Printf("Proxy: %s  ->  %s\n", sv.Mount, s.GetPath(i))
-
-		// Add handler based on a regexp with the info extracted from the JSON
-		mux.HandleFunc(regexp.MustCompile("^"+sv.Mount), proxyCall(s.GetPath(i), sv.Mount))
-	}
+	// Add handler based on the info extracted from the JSON
+	mux.HandleFunc("/", proxyCall(s))
 
 	// Start listening
 	http.ListenAndServe(":"+strconv.Itoa(s.svs.Port), mux)
