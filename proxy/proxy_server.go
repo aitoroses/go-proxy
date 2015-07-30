@@ -7,16 +7,17 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
-func proxyCall(domain string) func(w http.ResponseWriter, r *http.Request) {
+func proxyCall(domain string, removingPartFromURL string) func(w http.ResponseWriter, r *http.Request) {
 
 	// Create a HTTP client
 	client := &http.Client{}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// URL to which proxy the call
-		url := domain + r.URL.Path
+		url := domain + strings.Replace(r.URL.Path, removingPartFromURL, "", 1)
 		fmt.Printf("%s %s\n", r.Method, url)
 
 		// Create a Request
@@ -33,7 +34,7 @@ func proxyCall(domain string) func(w http.ResponseWriter, r *http.Request) {
 
 		// Write the response
 		body, err := ioutil.ReadAll(resp.Body)
-		w.Header().Set("X-proxy", "GrayProxy")
+		w.Header().Set("X-Proxy", "go-proxy")
 		io.WriteString(w, string(body))
 	}
 }
@@ -68,7 +69,7 @@ func (s *Proxy) Start() {
 		fmt.Printf("Proxy: %s  ->  %s\n", sv.Mount, s.GetPath(i))
 
 		// Add handler based on a regexp with the info extracted from the JSON
-		mux.HandleFunc(regexp.MustCompile("^"+sv.Mount), proxyCall(s.GetPath(i)))
+		mux.HandleFunc(regexp.MustCompile("^"+sv.Mount), proxyCall(s.GetPath(i), sv.Mount))
 	}
 
 	// Start listening

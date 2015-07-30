@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	proxy "github.com/aitoroses/GrayProxy/proxy"
+	proxy "github.com/aitoroses/go-proxy/proxy"
 )
 
 /*
